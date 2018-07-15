@@ -105,7 +105,7 @@ class Encoder
     boolean_array_to_hex_string(boolean_arr_3)
   end
 
-  def find_key_to_xor_cipher(hex_string)
+  def decrypt_xor(char, hex_string)
     my_hex = hex_string.dup
 
     # chunk into bytes (2 hex characters)
@@ -114,28 +114,34 @@ class Encoder
       arr << my_hex.slice!(0..1)
     end
 
+    char_in_hex = char.ord.to_s(16).rjust(2, "0") # get hex string of ascii character code
+    hex_arr = arr.map { |h| fixed_xor(h, char_in_hex) } rescue [] # map fixed-xor with hex of char
+    hex_array_to_character_string(hex_arr) # decoded the hex_array back into ascii
+  end
+
+  def find_key_to_xor_cipher(hex_string)
     max_percentage = 0
     winner         = 0.chr
     answer         = ""
 
     (0..255).each do |i|
-      char = i.to_s(16) # get hex string of each ascii character
-      hex_arr = arr.map { |h| fixed_xor(h, char) } rescue []       # map fixed-xor with hex of char
-      decoded = hex_array_to_character_string(hex_arr) # decoded the hex_array back into ascii
-      p       = percentage(VOWELS, decoded) + percentage(CONSONANTS, decoded) # compute % of vowels and characters
-      if p > max_percentage   # the highest percentage wins
+      decoded = decrypt_xor(i.chr, hex_string)
+      p       = percentage([" "], decoded) + percentage(VOWELS, decoded) + percentage(CONSONANTS, decoded) # compute % of vowels and characters
+      if p > max_percentage # the highest percentage wins
         max_percentage = p
         winner         = i.chr
         answer         = decoded
       end
-      puts "#{i}: #{sprintf("%.2f\%", p * 100)} #{decoded}"
+      #puts "#{i}: #{sprintf("%.2f\%", p * 100)} #{decoded}"
     end
+
+    #puts "#{winner}: #{sprintf("%.2f\%", max_percentage * 100)} #{answer}" if max_percentage > 0.5
 
     [max_percentage, winner, answer]
   end
 
   def hex_array_to_character_string(hex_arr)
-    hex_arr.map { |h| h.to_i(16).chr(Encoding::ASCII_8BIT) }.inject("") { |str, ch| str + ch }  # decoded the hex_array back into ascii
+    hex_arr.map { |h| h.to_i(16).chr(Encoding::ASCII_8BIT) }.inject("") { |str, ch| str + ch } # decoded the hex_array back into ascii
   end
 
   def hex_string_to_character_string(hex_string)

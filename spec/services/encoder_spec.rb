@@ -2,6 +2,8 @@ require "rails_helper"
 
 RSpec.describe Encoder do
 
+  let(:data_path) { "challenge-data/" }
+
   context "Crypto Challenge Set 1" do
     it "passes 1:1 hex to base_64 encoding" do
       hex_string     = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
@@ -36,6 +38,25 @@ RSpec.describe Encoder do
       expect(percentage).to be >= 0.75
       expect(char).to eq "X"
       puts answer
+    end
+    it "passes 1:4 detect single-character xor" do
+      data = File.new(data_path + "4.txt", "r")
+      expect(data).to_not be nil
+      e          = Encoder.new
+      l, p, c, a = [0, 0, "0", ""]
+      i          = 0
+      while (line = data.gets)
+        percentage, char, answer = e.find_key_to_xor_cipher(line.strip)
+        puts "\"#{i}\": #{sprintf("%.2f\%", percentage * 100)} #{char} : \"#{answer}\"" if percentage > 0.95
+        if percentage > p
+          l, p, c, a = [line, percentage, char, answer]
+        end
+        i += 1
+      end
+      data.close
+
+      puts "The winner is: #{sprintf("%.2f\%", p * 100)} #{c} : \"#{answer}\""
+      expect(p).to be > 0.96
     end
   end
 end
