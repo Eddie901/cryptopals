@@ -105,6 +105,28 @@ class Encoder
     boolean_array_to_hex_string(boolean_arr_3)
   end
 
+  def encrypt_xor(key, string)
+    #convert key into n-byte hex
+    #convert string into hex
+    #chunk string_hex into key-sized chunks
+    # fixed_xor them and reconstitute into hex_string
+    key_hex    = character_string_to_hex_string(key)
+    string_hex = character_string_to_hex_string(string)
+    chunk_size = key_hex.size
+
+    #chunk into blocks of chunk_size
+    arr = []
+    while (!string_hex.empty?)
+      arr << string_hex.slice!(0...chunk_size)
+    end
+
+    padding         = chunk_size - arr.last.size
+    arr[arr.size-1] = arr[arr.size-1].ljust(chunk_size, "0") if padding > 0
+
+    encoded = arr.map { |h| fixed_xor(key_hex, h) }.inject("") { |str, s| str = str + s }
+    encoded[0...-padding] if padding > 0
+  end
+
   def decrypt_xor(char, hex_string)
     my_hex = hex_string.dup
 
@@ -152,6 +174,10 @@ class Encoder
       hex_arr << my_hex.slice!(0..1)
     end
     hex_array_to_character_string(hex_arr)
+  end
+
+  def character_string_to_hex_string(string)
+    string.each_char.to_a.map { |ch| ch.ord.to_s(16).rjust(2, '0') }.inject("") { |str, h| str = str + h }
   end
 
   def percentage(characters, string)
