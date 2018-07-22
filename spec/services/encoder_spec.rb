@@ -47,22 +47,61 @@ RSpec.describe Encoder do
       i          = 0
       while (line = data.gets)
         percentage, char, answer = e.find_key_to_xor_cipher(line.strip)
-        puts "\"#{i}\": #{sprintf("%.2f\%", percentage * 100)} #{char} : \"#{answer}\"" if percentage > 0.95
+        #puts "\"#{i}\": #{sprintf("%.2f\%", percentage * 100)} #{char} : \"#{answer}\"" if percentage > 0.95
         if percentage > p
-          l, p, c, a = [line, percentage, char, answer]
+          p, c, a = [percentage, char, answer]
         end
         i += 1
       end
       data.close
 
-      puts "The winner is: #{sprintf("%.2f\%", p * 100)} #{c} : \"#{answer}\""
+      puts "The winner is: #{sprintf("%.2f\%", p * 100)} '#{c}' : \"#{a.force_encoding(Encoding::UTF_8)}\"" # encode('utf-8' or .encoding to get encoding
       expect(p).to be > 0.96
     end
     it "passes 1:5 repeated key XOR with key ICE" do
       string = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
       result = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
       e      = Encoder.new
-      expect(e.encrypt_xor("ICE", string)).to eq result
+      expect(e.repeated_key_xor_to_hex("ICE", string)).to eq result
     end
+    it "1:5 helper repeatedly encrypting using repeated-key XOR recovers the original string" do
+      strings = read_lines("one_liners.txt")
+      expect(strings.size).to eq 9
+      keys   = ["Rachel", "Dynamo", "ICE", "Hello, World!"]#"::5^&*"]
+      expect(keys.size).to eq 4
+      e      = Encoder.new
+      strings.each do |string|
+        keys.each do |key|
+          result = e.encrypt_xor(key, string).force_encoding(Encoding::UTF_8)
+          puts "#String: #{string} encrypted with Key: #{key} " #gives #{result.force_encoding(Encoding::UTF_8)}"
+          expect(e.encrypt_xor(key, result) == string).to be true
+          puts "Success"
+        end
+      end
+    end
+    it "1:6 prelim can convert a base_64 encoded string into binary the hex and back again" do
+      base_64_samples = read_lines("base_64_samples.txt")
+      expect(base_64_samples.size).to eq 10
+      e  = Encoder.new
+      base_64_samples.each do |base_64_str|
+        bin_str = e.base_64_to_binary(base_64_str)
+        hex_str = e.binary_to_hex(bin_str)
+        expect(e.base_64_to_hex(base_64_str)).to eq hex_str
+        expect(e.hex_to_base_64(hex_str)).to eq base_64_str
+      end
+    end
+  end
+
+  def read_lines(filename)
+    data = File.new(data_path + filename, "r")
+    expect(data).to_not be nil
+    strings = []
+    while (line = data.gets)
+      strings << line.strip
+      puts "#{line}"
+    end
+    data.close
+    puts "Loaded #{strings.size} lines"
+    strings
   end
 end

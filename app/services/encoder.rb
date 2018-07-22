@@ -18,7 +18,7 @@ class Encoder
     Encoder::HEX_CHARACTERS.index(ch)
   end
 
-  def to_binary(i, n = 4)
+  def int_to_binary(i, n = 4)
     raise "integer #{i} to big for #{n}-digit binary" unless i < 2 ** n
     i.to_s(2).rjust(n, '0')
   end
@@ -27,28 +27,29 @@ class Encoder
     str.each_char.to_a
   end
 
-  def arr_to_bin(arr)
-    arr.map { |i| to_bin(hex(i)) }.inject("") { |str, ch| str + ch }
+  def hex_to_base_64(hex)
+    binary_to_base_64(hex_to_binary(hex))
   end
 
-  def hex_to_base64_decode(hex)
-    bin_to_base64_encode(hex_to_bin_encode(hex))
+  def base_64_to_hex(base_64_str)
+    binary_to_hex(base_64_to_binary(base_64_str))
   end
 
-  def chs_to_bin(str)
+  def chs_to_binary(str)
     str.unpack("C*").map { |i| i.to_s(2).rjust(8, '0') }.inject("") { |str, ch| str + ch }
   end
 
-  def hex_to_base64_code()
+  #not used
+  def hex_to_base_64_code()
     @str.unpack("C*")
   end
 
-  def hex_to_bin_encode(hex)
-    hex.unpack("a").map { |c| hex_hash[c] }.map { |i| i.to_s(2) }
+  def hex_to_binary(hex)
+   hex.each_char.to_a.map{ |ch| to_binary(get_hex_index(ch), 4) }.inject(""){ |str, bits_4| str + bits_4 }
   end
 
-  def hex_array_to_bin_array(arr)
-    arr.map { |ch| hex_hash[ch] }.map { |i| i.to_s(2).rjust(4, '0') }
+  def hex_array_to_binary_array(arr)
+    arr.map { |ch| int_to_binary(get_hex_index(ch), 4) }
   end
 
   def merg_strings(arr)
@@ -58,7 +59,7 @@ class Encoder
   def hex_to_binary(hex_string)
     # extract array of character values from hex string
     # find hex character index, map to 4-bit string and combine
-    string_to_array(hex_string).map { |c| to_binary(get_hex_index(c)) }.inject("") { |str, ch| str + ch }
+    string_to_array(hex_string).map { |c| int_to_binary(get_hex_index(c)) }.inject("") { |str, ch| str + ch }
   end
 
   def binary_to_base_64(binary_string)
@@ -71,7 +72,16 @@ class Encoder
     end
 
     #encode and combine into one string
-    arr2 = arr.map { |s| s.to_i(2) }.map { |i| BASE_64_CHARACTERS[i] }.inject("") { |str, ch| str + ch }
+    arr.map { |s| s.to_i(2) }.map { |i| BASE_64_CHARACTERS[i] }.inject("") { |str, ch| str + ch }
+  end
+
+  def base_64_to_binary(base_64_str)
+    return "" if base_64_str.blank?
+    base_64_str.each_char.to_a.map { |ch| int_to_binary(get_base_64_index(ch), 6) }.inject("") { |str, six_bits| str = str + six_bits }
+  end
+
+  def binary_to_hex(bin_str)
+    boolean_array_to_hex_string(bin_str.each_char.to_a.map { |ch| ch == "1" ? true : false})
   end
 
   def hex_to_boolean_array(hex_string)
@@ -105,7 +115,13 @@ class Encoder
     boolean_array_to_hex_string(boolean_arr_3)
   end
 
+
   def encrypt_xor(key, string)
+    hex_string_to_character_string(repeated_key_xor_to_hex(key, string))
+  end
+
+  def repeated_key_xor_to_hex(key, string)
+    return "" if key.blank? || string.blank?
     #convert key into n-byte hex
     #convert string into hex
     #chunk string_hex into key-sized chunks
@@ -124,7 +140,7 @@ class Encoder
     arr[arr.size-1] = arr[arr.size-1].ljust(chunk_size, "0") if padding > 0
 
     encoded = arr.map { |h| fixed_xor(key_hex, h) }.inject("") { |str, s| str = str + s }
-    encoded[0...-padding] if padding > 0
+    encoded[0...-padding] if padding > 0     # remove the padding chars
   end
 
   def decrypt_xor(char, hex_string)
@@ -167,6 +183,7 @@ class Encoder
   end
 
   def hex_string_to_character_string(hex_string)
+    return "" if hex_string.blank?
     my_hex = hex_string.dup
     # chunk into 2-hex and xor with hex of char
     hex_arr = []
