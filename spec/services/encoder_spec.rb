@@ -64,7 +64,7 @@ RSpec.describe Encoder do
       e      = Encoder.new
       expect(e.repeated_key_xor_to_hex("ICE", string)).to eq result
     end
-    it "1:5 helper repeatedly encrypting using repeated-key XOR recovers the original string" do
+    xit "1:5 helper repeatedly encrypting using repeated-key XOR recovers the original string" do
       strings = read_lines("one_liners.txt")
       expect(strings.size).to eq 9
       keys   = ["Rachel", "Dynamo", "ICE", "Hello, World!"]#"::5^&*"]
@@ -79,7 +79,7 @@ RSpec.describe Encoder do
         end
       end
     end
-    it "1:6 prelim can convert a base_64 encoded string into binary the hex and back again" do
+    xit "1:6 prelim can convert a base_64 encoded string into binary the hex and back again" do
       base_64_samples = read_lines("base_64_samples.txt")
       expect(base_64_samples.size).to eq 10
       e  = Encoder.new
